@@ -183,9 +183,9 @@ def _initialize(V, W, H, r):
     return(W, H)
     
     
-def _objective_function(V, W, H, sparsity, smoothness, betaW, betaH):
+def _objective_function(V, W, H, sparsity, smoothness, betaW, betaH, T=None):
     objective = LA.norm(W @ H - V,'fro')**2 + \
-    smoothness * LA.norm(H @ H.T,'fro')**2 + sparsity * np.sum(np.sum(np.abs(W))) + \
+    smoothness * LA.norm(H @ T,'fro')**2 + sparsity * np.sum(np.sum(np.abs(W))) + \
     betaW * LA.norm(W,'fro') + betaH * LA.norm(H,'fro'); 
 
     return(objective)
@@ -201,13 +201,16 @@ def smooth_nmf(V, W, H, sparsity=0, smoothness=0, early_stopping=0, gamma1=1.001
         # Tikhonov regularization matrix
         T = (np.eye(V.shape[1]) - np.diag(np.ones((V.shape[1]-1,)),-1))[:,:-1]
         TTp = T@T.T;
+    else:
+        # setting to zero: will not use it since smoothness will be zero anyway
+        T = np.zeros((V.shape[1],V.shape[1]))
         
     for it in range(max_iter):
         
         W = _update_W(V, W, H, gamma1=gamma1, sparsity=sparsity, smoothness=smoothness, betaW=betaW)
         H = _update_H(V, W, H, gamma2=gamma2, sparsity=sparsity, smoothness=smoothness, betaH=betaH, TTp=TTp)
         
-        obj.append(_objective_function(V, W, H, sparsity=sparsity, smoothness=smoothness, betaW=betaW, betaH=betaH))
+        obj.append(_objective_function(V, W, H, sparsity=sparsity, smoothness=smoothness, betaW=betaW, betaH=betaH, T=T))
         
     return(W, H, obj)
 
