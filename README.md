@@ -1,4 +1,4 @@
-#### Temporally Smooth NMF
+#### ssNMF: Smooth and Sparse NMF
 
 This is a Python implementation of the smooth and sparse NMF algorithm proposed here https://github.com/raimon-fa/palm-nmf.
 
