@@ -3,16 +3,18 @@ from scipy.io import loadmat
 import ssnmf
 import numpy.linalg as LA
 
+
 import os
 # output = loadmat(os.path.join(os.path.dirname(__file__),'output.mat'))
 import sys
 sys.path.append('..')
-
+import os.path as op
+data_path = op.join(ssnmf.__path__[0],'data')
 
 def test_all_zero_one_iteration():
     # testing no sparsity, no smoothnes, 1 iteration
-    output = loadmat('output.mat')
-    model = ssnmf(r=5, max_iter=1, betaW=0, betaH=0)
+    output = loadmat(op.join(data_path,'output.mat'))
+    model = ssnmf.smoothNMF(r=5, max_iter=1, betaW=0, betaH=0)
     model.fit(output['V'], W=output['init_W'], H=output['init_H'])
 
     print(LA.norm(output['V'] - (model.W@model.H)))
@@ -28,24 +30,24 @@ def test_all_zero_one_iteration():
 
 def test_all_zero_200_iterations():
     # testing no sparsity, no smoothness, 200 iterations
-    output = loadmat('output.mat')
-    model = ssnmf(r=5, max_iter=200, betaW=0, betaH=0)
+    output = loadmat(op.join(data_path,'output.mat'))
+    model = ssnmf.smoothNMF(r=5, max_iter=200, betaW=0, betaH=0)
     model.fit(output['V'], W=output['init_W'], H=output['init_H'])
     nt.assert_almost_equal(model.cost[-1],3636.162716116)
 
 
 def sparse_one_iteration():
     # testing sparsity, 1 iteration
-    output = loadmat('output.mat')
-    model = smoothNMF(r=5, max_iter=1, sparsity=1, smoothness=0, betaW=0, betaH=0)
+    output = loadmat(op.join(data_path,'output.mat'))
+    model = ssnmf.smoothNMF(r=5, max_iter=1, sparsity=1, smoothness=0, betaW=0, betaH=0)
     model.fit(output['V'], W=output['init_W'], H=output['init_H'])
     nt.assert_almost_equal(model.cost[-1],4750.738752595)
 
 
 def test_smooth_one_iteration():
     # testing smoothness, 1 iteration
-    output = loadmat('output.mat')
-    model = ssnmf(r=5, max_iter=1, sparsity=0, smoothness=1, betaW=0.0, betaH=0.0)
+    output = loadmat(op.join(data_path,'output.mat'))
+    model = ssnmf.smoothNMF(r=5, max_iter=1, sparsity=0, smoothness=1, betaW=0.0, betaH=0.0)
     model.fit(output['V'], W=output['init_W'], H=output['init_H'])
 
     import numpy.linalg as LA
@@ -58,23 +60,23 @@ def test_smooth_one_iteration():
     
 def test_smooth_and_parse_one_iterations():
     # testing sparsity and smoothness, 1 iteration
-    output = loadmat('output.mat')
-    model = ssnmf(r=5, max_iter=1, sparsity=1, smoothness=1, betaW=0, betaH=0)
+    output = loadmat(op.join(data_path,'output.mat'))
+    model = ssnmf.smoothNMF(r=5, max_iter=1, sparsity=1, smoothness=1, betaW=0, betaH=0)
     model.fit(output['V'], W=output['init_W'], H=output['init_H'])
     nt.assert_almost_equal(model.cost[-1],6715.167611171)
 
 
 def test_smooth_and_parse_200_iterations():
     # testing sparsity and smoothness, 200 iterations
-    output = loadmat('output.mat')
-    model = ssnmf(r=5, max_iter=200, sparsity=1, smoothness=1, betaW=0.0, betaH=0.0)
+    output = loadmat(op.join(data_path,'output.mat'))
+    model = ssnmf.smoothNMF(r=5, max_iter=200, sparsity=1, smoothness=1, betaW=0.0, betaH=0.0)
     model.fit(output['V'], W=output['init_W'], H=output['init_H'])
     nt.assert_almost_equal(model.cost[-1],3909.6946, decimal=4)
 
 def test_smooth_and_sparse_200_iterations_betas():
     # testing sparsity and smoothness, 200 iterations
-    output = loadmat('output.mat')
-    model = ssnmf(r=5, max_iter=200, sparsity=1, smoothness=1, betaW=0.1, betaH=0.1)
+    output = loadmat(op.join(data_path,'output.mat'))
+    model = ssnmf.smoothNMF(r=5, max_iter=200, sparsity=1, smoothness=1, betaW=0.1, betaH=0.1)
     model.fit(output['V'], W=output['init_W'], H=output['init_H'])
     nt.assert_almost_equal(model.cost[-1],3893.69665, decimal=4)
 
