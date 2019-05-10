@@ -1,6 +1,6 @@
 import numpy.testing as nt
 from scipy.io import loadmat
-from ssnmf import ssnmf
+import ssnmf
 import numpy.linalg as LA
 
 import os
