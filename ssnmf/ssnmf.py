@@ -187,7 +187,7 @@ def _objective_function(V, W, H, sparsity, smoothness, betaW, betaH, T=None):
 
 
 def smooth_nmf(V, W, H, sparsity=0, smoothness=0, early_stopping=0,
-    gamma1=1.001, gamma2=1.001, betaH=0.1, betaW=0.1, r=5, max_iter=100, TTp=None):
+    gamma1=1.001, gamma2=1.001, betaH=0.1, betaW=0.1, r=5, max_iter=100, TTp=None, TTp_norm=None):
 
     W, H = _initialize(V, W, H, r)
 
