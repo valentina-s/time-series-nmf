@@ -92,7 +92,8 @@ def _update_H(V, W, H, gamma2, sparsity, smoothness, betaH, TTp, TTp_norm):
 
     if smoothness == 0 and sparsity == 0:
         # standard NMF update
-        d = gamma2 * 2 * (LA.norm(W @ W.T, 'fro'))
+        # d = gamma2 * 2 * (LA.norm(W @ W.T, 'fro'))
+        d = gamma2 * 2 * np.trace((W.T @ W)**2)
         # gradient descend
         H_new = H - (1 / d) * 2 * (W.T @ (W @ H - V))
         # proximity operator
@@ -101,7 +102,8 @@ def _update_H(V, W, H, gamma2, sparsity, smoothness, betaH, TTp, TTp_norm):
     elif sparsity > 0 and smoothness == 0:
         # sparse NMF update
 
-        d = gamma2 * 2 * (LA.norm(W@W.T) + betaH)
+        # d = gamma2 * 2 * (LA.norm(W@W.T) + betaH)
+        d = gamma2 * 2 * np.trace((W.T @ W)**2) + betaH)
         # gradient descend
         H_new = H - (1 / d) * 2 * (W.T @ (W @ H - V) + betaH * H)
         # proximity operator
@@ -109,7 +111,8 @@ def _update_H(V, W, H, gamma2, sparsity, smoothness, betaH, TTp, TTp_norm):
 
     elif sparsity == 0 and smoothness > 0:
         # smooth NMF update
-        d = gamma2 * 2 * (LA.norm(W@W.T) + smoothness * TTp_norm)
+        # d = gamma2 * 2 * (LA.norm(W@W.T) + smoothness * TTp_norm)
+        d = gamma2 * 2 * np.trace((W.T @ W)**2) + smoothness * TTp_norm
         # gradient descend
         H_new = H - (1 / d) * 2 * (W.T @ (W @ H - V) + smoothness * (H @ TTp))
         # proximity operator
@@ -118,7 +121,8 @@ def _update_H(V, W, H, gamma2, sparsity, smoothness, betaH, TTp, TTp_norm):
     elif sparsity > 0 and smoothness > 0:
         # sparse and smooth NMF update
 
-        d = gamma2 * 2 * (LA.norm(W@W.T) + smoothness * TTp_norm + betaH)
+        #d = gamma2 * 2 * (LA.norm(W@W.T) + smoothness * TTp_norm + betaH)
+        d = gamma2 * 2 * np.trace((W.T @ W)**2) + smoothness * TTp_norm + betaH
         # gradient descend
         H_new = H - (1 / d) * 2 * (W.T @ (W @ H - V) + smoothness * (H @ TTp) + betaH * H)
         # proximity operator
