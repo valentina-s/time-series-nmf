@@ -59,7 +59,8 @@ class smoothNMF():
 
 # this is the case with no sparsity and smoothness
 
-    def __init__(self, sparsity=0, smoothness=0, early_stopping=0, gamma1=1.001, gamma2=1.001, betaH=0, betaW=0, r=5, max_iter=200):
+    def __init__(self, sparsity=0, smoothness=0, early_stopping=0,
+    gamma1=1.001, gamma2=1.001, betaH=0, betaW=0, r=5, max_iter=200):
 
         self.max_iter = max_iter
         self.sparsity = sparsity
@@ -87,7 +88,7 @@ class smoothNMF():
         self.cost = obj
 
 
-def _update_H(V, W, H, gamma2, sparsity, smoothness, betaH, TTp):
+def _update_H(V, W, H, gamma2, sparsity, smoothness, betaH, TTp, TTp_norm):
 
     if smoothness == 0 and sparsity == 0:
         # standard NMF update
@@ -108,7 +109,7 @@ def _update_H(V, W, H, gamma2, sparsity, smoothness, betaH, TTp):
 
     elif sparsity == 0 and smoothness > 0:
         # smooth NMF update
-        d = gamma2 * 2 * (LA.norm(W@W.T) + smoothness * LA.norm(TTp))
+        d = gamma2 * 2 * (LA.norm(W@W.T) + smoothness * TTp_norm)
         # gradient descend
         H_new = H - (1 / d) * 2 * (W.T @ (W @ H - V) + smoothness * (H @ TTp))
         # proximity operator
@@ -117,7 +118,7 @@ def _update_H(V, W, H, gamma2, sparsity, smoothness, betaH, TTp):
     elif sparsity > 0 and smoothness > 0:
         # sparse and smooth NMF update
 
-        d = gamma2 * 2 * (LA.norm(W@W.T) + smoothness * LA.norm(TTp) + betaH)
+        d = gamma2 * 2 * (LA.norm(W@W.T) + smoothness * TTp_norm + betaH)
         # gradient descend
         H_new = H - (1 / d) * 2 * (W.T @ (W @ H - V) + smoothness * (H @ TTp) + betaH * H)
         # proximity operator
@@ -196,6 +197,7 @@ def smooth_nmf(V, W, H, sparsity=0, smoothness=0, early_stopping=0,
         # Tikhonov regularization matrix
         T = (np.eye(V.shape[1]) - np.diag(np.ones((V.shape[1]-1,)), -1))[:, :-1]
         TTp = T@T.T
+        TTp_norm = LA.norm(TTp)
     else:
         # setting to zero: will not use it since smoothness will be zero anyway
         T = np.zeros((V.shape[1], V.shape[1]))
@@ -203,7 +205,7 @@ def smooth_nmf(V, W, H, sparsity=0, smoothness=0, early_stopping=0,
     for it in range(max_iter):
 
         W = _update_W(V, W, H, gamma1=gamma1, sparsity=sparsity, smoothness=smoothness, betaW=betaW)
-        H = _update_H(V, W, H, gamma2=gamma2, sparsity=sparsity, smoothness=smoothness, betaH=betaH, TTp=TTp)
+        H = _update_H(V, W, H, gamma2=gamma2, sparsity=sparsity, smoothness=smoothness, betaH=betaH, TTp=TTp, TTp_norm=TTp_norm)
 
         obj.append(_objective_function(V, W, H, sparsity=sparsity, smoothness=smoothness, betaW=betaW, betaH=betaH, T=T))
 
