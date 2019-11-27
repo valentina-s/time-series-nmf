@@ -209,7 +209,7 @@ def _initialize(X, W, H, r, init=None, eps=1e-6, random_state=None):
     # NNDSVD initialization
     # code from
     # https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/decomposition/_nmf.py
-    U, S, V = LA.svd(X, full_matrices=False, random_state=random_state)
+    U, S, V = LA.svd(X, full_matrices=False)
     U = U[:, r]
     V = V[r, :]
     W, H = np.zeros(U.shape), np.zeros(V.shape)
@@ -285,7 +285,7 @@ def smooth_nmf(X, W, H, r=None, init=None, sparsity=0, smoothness=0, early_stopp
         r = min(X.shape[0], X.shape[1])
 
     if init == 'custom':
-        pass # need to add checks for None, or option to set one    
+        pass # need to add checks for None, or option to set one
     else:
         W, H = _initialize(X, W, H, r, init=init, eps=1e-6, random_state=None)
 
