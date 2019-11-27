@@ -210,8 +210,8 @@ def _initialize(X, W, H, r, init=None, eps=1e-6, random_state=None):
     # code from
     # https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/decomposition/_nmf.py
     U, S, V = LA.svd(X, full_matrices=False)
-    U = U[:, r]
-    V = V[r, :]
+    U = U[:, :r]
+    V = V[:r, :]
     W, H = np.zeros(U.shape), np.zeros(V.shape)
 
     # The leading singular triplet is non-negative
