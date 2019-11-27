@@ -32,7 +32,7 @@ def test_all_zero_200_iterations():
     # testing no sparsity, no smoothness, 200 iterations
     output = loadmat(op.join(data_path,'output.mat'))
     model = ssnmf.smoothNMF(r=5, max_iter=200, betaW=0, betaH=0)
-    model.fit(output['V'], W=output['init_W'], H=output['init_H'])
+    model.fit(output['V'], W=output['init_W'], H=output['init_H'], init='custom')
     nt.assert_almost_equal(model.cost[-1],3636.162716116)
 
 
