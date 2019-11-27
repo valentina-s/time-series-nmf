@@ -79,11 +79,11 @@ class smoothNMF():
         self.r = r
 
 
-    def fit(self, X, W=None, H=None):
+    def fit(self, X, W=None, H=None, init=None):
 
         [W, H, obj] = smooth_nmf(X, sparsity=self.sparsity, smoothness=self.smoothness,
             early_stopping=self.early_stopping, gamma1=self.gamma1, gamma2=self.gamma2,
-            betaH=self.betaH, betaW=self.betaW, r=self.r, max_iter=self.max_iter, W=W, H=H, init=None)
+            betaH=self.betaH, betaW=self.betaW, r=self.r, max_iter=self.max_iter, W=W, H=H, init=init)
 
         self.W = W
         self.H = H
