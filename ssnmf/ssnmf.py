@@ -16,42 +16,49 @@ class smoothNMF():
                                                         + betaH ||H||²
 
 
-     Inputs:
-     ------
+    Parameters
+    ----------
 
-     X:  matrix to be factorized
-     params: optional parameters
-         sparsity: weight for the L1 sparsity penalty (default: 0)
+    X:  matrix to be factorized
 
-         smoothness: weight for the smoothness constraint.
+    params: optional parameters
 
-         max_iter: maximum number of iterations (default: 100)
+    sparsity: weight for the L1 sparsity penalty (default: 0)
 
-         conv_eps: threshold for early stopping (default: 0,
+    smoothness: weight for the smoothness constraint.
+
+    max_iter: maximum number of iterations (default: 100)
+
+    conv_eps: threshold for early stopping (default: 0,
                                                  i.e., no early stopping)
-         random_seed: set the random seed to the given value
+    random_seed: set the random seed to the given value
                        (default: 1; if equal to 0, seed is not set)
-         init_W:   initial setting for W (default: random;
+    init_W:   initial setting for W (default: random;
                                           either init_w or r have to be set)
-         n_components: (K)       # basis functions (default: based on init_w's size;
+    n_components: (K)       # basis functions (default: based on init_w's size;
                                       either init_w or r have to be set)
-         init_H:   initial setting for H (default: random)
-         init_W:   initial setting for W (default: random)
+    init_H:   initial setting for H (default: random)
 
-         gamma1:   constant > 1 for the gradient descend step of W.
+    init_W:   initial setting for W (default: random)
 
-         gamma2:   constant > 1 for the gradient descend step of W.
+    gamma1:   constant > 1 for the gradient descend step of W.
 
-         betaH:   constant. L-2 constraint for H.
-         betaW:   constant. L-2 constraint for W.
+    gamma2:   constant > 1 for the gradient descend step of W.
 
-     Outputs:
-     -------
+    betaH:   constant. L-2 constraint for H.
 
-         W: matrix of basis functions
-         H: matrix of activations
-         objective: objective function values throughout the iterations
-         iter_times: time passed until iteration ith
+    betaW:   constant. L-2 constraint for W.
+
+    Attributes
+    ----------
+
+    W: matrix of basis functions
+
+    H: matrix of activations
+
+    objective: objective function values throughout the iterations
+
+    iter_times: time passed until iteration ith
 
     Note: when smoothness is zero: the betaH and betaW are not used (sort of set to zero)?
 
@@ -60,7 +67,7 @@ class smoothNMF():
 # this is the case with no sparsity and smoothness
 
     def __init__(self, sparsity=0, smoothness=0, early_stopping=0,
-    gamma1=1.001, gamma2=1.001, betaH=0, betaW=0, n_components=5, max_iter=200):
+    gamma1=1.001, gamma2=1.001, betaH=0, betaW=0, n_components=None, max_iter=200):
 
         self.max_iter = max_iter
         self.sparsity = sparsity
@@ -280,7 +287,7 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
     TTp=None, TTp_norm=None):
 
     if n_components is None:
-        r = min(X.shape[0], X.shape[1])
+        n_components = min(X.shape[0], X.shape[1])
 
     if init == 'custom':
         pass # need to add checks for None, or option to set one
