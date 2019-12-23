@@ -14,7 +14,7 @@ data_path = op.join(ssnmf.__path__[0],'data')
 def test_all_zero_one_iteration():
     # testing no sparsity, no smoothnes, 1 iteration
     output = loadmat(op.join(data_path,'output.mat'))
-    model = ssnmf.smoothNMF(r=5, max_iter=1, betaW=0, betaH=0)
+    model = ssnmf.smoothNMF(n_components=5, max_iter=1, betaW=0, betaH=0)
     model.fit(output['V'], W=output['init_W'], H=output['init_H'], init='custom')
 
     print(LA.norm(output['V'] - (model.W@model.H)))
