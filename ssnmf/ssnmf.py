@@ -111,9 +111,9 @@ class smoothNMF():
 
         H = self.H
         idx = np.argmax(H, axis=0)
-        mat1 = np.tile(idx, (H.shape[0], 1))
-        mat2 = np.tile(np.reshape(idx.T,(len(idx),1)), (1, H.shape[0]))
-        conn = eq(mat1, mat2)
+        mat1 = np.tile(idx, (H.shape[1], 1))
+        mat2 = np.tile(np.reshape(idx.T,(len(idx),1)), (1, H.shape[1]))
+        conn = eq(np.mat(mat1), np.mat(mat2))
         return np.mat(conn, dtype='d')
 
 
