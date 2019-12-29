@@ -1,6 +1,7 @@
 import numpy as np
 from numpy import linalg as LA
 import numbers
+from operator import eq
 
 
 
@@ -94,6 +95,28 @@ class smoothNMF():
         self.H = H
         self.cost = obj
 
+    def connectivity(self, H=None):
+        """
+        Compute the connectivity matrix for the samples based on their mixture coefficients.
+
+        The connectivity matrix C is a symmetric matrix which shows the shared membership of the samples: entry C_ij is 1 iff sample i and
+        sample j belong to the same cluster, 0 otherwise. Sample assignment is determined by its largest metagene expression value.
+
+        Return connectivity matrix.
+
+        :param idx: Used in the multiple NMF model. In factorizations following
+            standard NMF model or nonsmooth NMF model ``idx`` is always None.
+        :type idx: None or `str` with values 'coef' or 'coef1' (`int` value of 0 or 1, respectively)
+        """
+
+        H = self.H
+        idx = np.argmax(H, axis=0)
+        mat1 = np.tile(idx, (H.shape[0], 1))
+        mat2 = np.tile(np.reshape(idx.T,(len(idx),1)), (1, H.shape[0]))
+        conn = eq(mat1, mat2)
+        return np.mat(conn, dtype='d')
+
+
 
 def _update_H(X, W, H, gamma2, sparsity, smoothness, betaH, TTp, TTp_norm):
 
@@ -182,6 +205,7 @@ def _update_W(X, W, H, gamma1, sparsity, smoothness, betaW):
         W_new = np.maximum(z1 - 2 * sparsity / c, 0)
 
     return(W_new)
+
 
 
 def check_random_state(seed):
