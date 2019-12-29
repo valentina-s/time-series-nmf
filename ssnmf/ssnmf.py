@@ -108,8 +108,8 @@ class smoothNMF():
             standard NMF model or nonsmooth NMF model ``idx`` is always None.
         :type idx: None or `str` with values 'coef' or 'coef1' (`int` value of 0 or 1, respectively)
         """
-
-        H = self.H
+        if H is None:
+            H = self.H
         idx = np.argmax(H, axis=0)
         mat1 = np.tile(idx, (H.shape[1], 1))
         mat2 = np.tile(np.reshape(idx.T,(len(idx),1)), (1, H.shape[1]))
