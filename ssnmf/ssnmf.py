@@ -34,8 +34,6 @@ class smoothNMF():
                                                  i.e., no early stopping)
     random_seed: set the random seed to the given value
                        (default: 1; if equal to 0, seed is not set)
-    init_W:   initial setting for W (default: random;
-                                          either init_w or r have to be set)
     n_components: (K)       # basis functions (default: based on init_w's size;
                                       either init_w or r have to be set)
     init_H:   initial setting for H (default: random)
@@ -57,9 +55,7 @@ class smoothNMF():
 
     H: matrix of activations
 
-    objective: objective function values throughout the iterations
-
-    iter_times: time passed until iteration ith
+    cost: objective function values throughout the iterations
 
     Note: when smoothness is zero: the betaH and betaW are not used (sort of set to zero)?
 
@@ -85,11 +81,11 @@ class smoothNMF():
         self.n_components = n_components
 
 
-    def fit(self, X, W=None, H=None, init=None):
+    def fit(self, X, W=None, H=None, init=None, checkpoint_idx=None):
 
         [W, H, obj] = smooth_nmf(X, sparsity=self.sparsity, smoothness=self.smoothness,
             early_stopping=self.early_stopping, gamma1=self.gamma1, gamma2=self.gamma2,
-            betaH=self.betaH, betaW=self.betaW, n_components=self.n_components, max_iter=self.max_iter, W=W, H=H, init=init)
+            betaH=self.betaH, betaW=self.betaW, n_components=self.n_components, max_iter=self.max_iter, W=W, H=H, init=init, checkpoint_idx=checkpoint_idx)
 
         self.W = W
         self.H = H
@@ -312,7 +308,7 @@ def _objective_function(X, W, H, sparsity, smoothness, betaW, betaH, T=None):
 
 def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, early_stopping=0,
     gamma1=1.001, gamma2=1.001, betaH=0.1, betaW=0.1, max_iter=100,
-    TTp=None, TTp_norm=None):
+    TTp=None, TTp_norm=None, checkpoint_idx=None):
 
     if n_components is None:
         n_components = min(X.shape[0], X.shape[1])
@@ -333,11 +329,30 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
         # setting to zero: will not use it since smoothness will be zero anyway
         T = np.zeros((X.shape[1], X.shape[1]))
 
+    # open checkpoint file
+    from datetime import datetime
+    if checkpoint_idx is not None:
+        import shelve
+        chkpt_file = shelve.open('chkpt-'+'-'.join(str(datetime.now()).split(' ')))
+        #chkpt_file = shelve.open('chkpt')
+
     for it in range(max_iter):
 
         W = _update_W(X, W, H, gamma1=gamma1, sparsity=sparsity, smoothness=smoothness, betaW=betaW)
         H = _update_H(X, W, H, gamma2=gamma2, sparsity=sparsity, smoothness=smoothness, betaH=betaH, TTp=TTp, TTp_norm=TTp_norm)
 
         obj.append(_objective_function(X, W, H, sparsity=sparsity, smoothness=smoothness, betaW=betaW, betaH=betaH, T=T))
+
+        #saving the model checkpoints
+        if checkpoint_idx is not None:
+            import shelve
+            if it in checkpoint_idx:
+                chkpt_data = {'H':H,'W':W}
+                chkpt_file[str(it)] = chkpt_data
+                #pickle.dump(chkpt_data, chkpt_file)
+
+    chkpt_file.close()
+
+
 
     return(W, H, obj)
