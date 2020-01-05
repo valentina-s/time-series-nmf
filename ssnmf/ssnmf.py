@@ -2,6 +2,7 @@ import numpy as np
 from numpy import linalg as LA
 import numbers
 from operator import eq
+import os
 
 
 
@@ -20,7 +21,7 @@ class smoothNMF():
     Parameters
     ----------
 
-    X:  matrix to be factorized
+    X:  array to be factorized in n_features x n_observations format
 
     params: optional parameters
 
@@ -81,11 +82,33 @@ class smoothNMF():
         self.n_components = n_components
 
 
-    def fit(self, X, W=None, H=None, init=None, checkpoint_idx=None):
+    def fit(self, X, W=None, H=None, init=None, checkpoint_idx=None, checkpoint_dir=None):
+        """
+            Perform the decomposition.
+
+            Inputs
+            ------
+
+            X:    the array to be decomposed in a format n_features x n_observations.
+            W:    initial estimate for W
+            H:    initial estimate for H
+            init: select the type of ininitialization
+                  'custom' - use the provided W and H
+                  'random' - uniform distribution on [0,1]
+                  'nndsvd' - nonnegative svd
+                  'nndsvda'- nonnegative svd where zeros filled with average
+                  'nndsvdar' - nonnegative svd where zeros fillded with small random values
+            checkpoint_idx - list of iteration indeces for which to save the decompositions
+                  the format is a dictionary where the decompositions can be accessed by the iteration index,
+                  each decomposition is a dictionary with H and W keys
+            checkpoint_dir - the dir where to store the checkpoint file,
+                              by default it gets stored in the execution directory
+
+        """
 
         [W, H, obj] = smooth_nmf(X, sparsity=self.sparsity, smoothness=self.smoothness,
             early_stopping=self.early_stopping, gamma1=self.gamma1, gamma2=self.gamma2,
-            betaH=self.betaH, betaW=self.betaW, n_components=self.n_components, max_iter=self.max_iter, W=W, H=H, init=init, checkpoint_idx=checkpoint_idx)
+            betaH=self.betaH, betaW=self.betaW, n_components=self.n_components, max_iter=self.max_iter, W=W, H=H, init=init, checkpoint_idx=checkpoint_idx, checkpoint_dir=checkpoint_dir)
 
         self.W = W
         self.H = H
@@ -308,7 +331,7 @@ def _objective_function(X, W, H, sparsity, smoothness, betaW, betaH, T=None):
 
 def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, early_stopping=0,
     gamma1=1.001, gamma2=1.001, betaH=0.1, betaW=0.1, max_iter=100,
-    TTp=None, TTp_norm=None, checkpoint_idx=None):
+    TTp=None, TTp_norm=None, checkpoint_idx=None, checkpoint_dir=None):
 
     if n_components is None:
         n_components = min(X.shape[0], X.shape[1])
@@ -333,7 +356,13 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
     from datetime import datetime
     if checkpoint_idx is not None:
         import shelve
-        chkpt_file = shelve.open('chkpt-'+'-'.join(str(datetime.now()).split(' ')))
+        if checkpoint_dir is not None:
+            if os.path.isdir(checkpoint_dir):
+                chkpt_file = shelve.open(os.path.join(checkpoint_dir, 'chkpt-'+('-'.join(str(datetime.now()).split(' ')))))
+            else:
+                raise ValueError('Please provide an existing directory.')
+        else:
+            chkpt_file = shelve.open('chkpt-'+'-'.join(str(datetime.now()).split(' ')))
         #chkpt_file = shelve.open('chkpt')
 
     for it in range(max_iter):
