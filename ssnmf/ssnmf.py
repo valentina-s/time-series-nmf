@@ -9,7 +9,7 @@ import os
 class smoothNMF():
 
     """
-    Algorithm for NMF with Eucidian norm as objective function and
+    Model for NMF with Frobeneous norm as objective function and
     L1 constraint on W for sparse paterns and Tikhonov regularization
     for smooth activation coefficients.
 
@@ -17,29 +17,15 @@ class smoothNMF():
     || W * H - X ||² + lambda * || W ||_1 + eta || H T ||² + betaW ||W||²
                                                         + betaH ||H||²
 
-
-    Parameters
+    Attributes
     ----------
-
-    X:  array to be factorized in n_features x n_observations format
-
-    params: optional parameters
 
     sparsity: weight for the L1 sparsity penalty (default: 0)
 
     smoothness: weight for the smoothness constraint.
 
-    max_iter: maximum number of iterations (default: 100)
-
-    conv_eps: threshold for early stopping (default: 0,
-                                                 i.e., no early stopping)
-    random_seed: set the random seed to the given value
-                       (default: 1; if equal to 0, seed is not set)
     n_components: (K)       # basis functions (default: based on init_w's size;
-                                      either init_w or r have to be set)
-    init_H:   initial setting for H (default: random)
-
-    init_W:   initial setting for W (default: random)
+                                          either init_w or r have to be set)
 
     gamma1:   constant > 1 for the gradient descend step of W.
 
@@ -49,12 +35,9 @@ class smoothNMF():
 
     betaW:   constant. L-2 constraint for W.
 
-    Attributes
-    ----------
+    W: array of basis vectors, n_features x n_components
 
-    W: matrix of basis functions
-
-    H: matrix of activations
+    H: array of activations, n_components x n_observations
 
     cost: objective function values throughout the iterations
 
@@ -82,9 +65,9 @@ class smoothNMF():
         self.n_components = n_components
 
 
-    def fit(self, X, W=None, H=None, init=None, checkpoint_idx=None, checkpoint_dir=None):
+    def fit(self, X, W=None, H=None, init=None, checkpoint_idx=None, checkpoint_dir=None, random_state=None):
         """
-            Perform the decomposition.
+            Perform the decomposition with the PALM method.
 
             Inputs
             ------
@@ -106,9 +89,21 @@ class smoothNMF():
 
         """
 
-        [W, H, obj] = smooth_nmf(X, sparsity=self.sparsity, smoothness=self.smoothness,
-            early_stopping=self.early_stopping, gamma1=self.gamma1, gamma2=self.gamma2,
-            betaH=self.betaH, betaW=self.betaW, n_components=self.n_components, max_iter=self.max_iter, W=W, H=H, init=init, checkpoint_idx=checkpoint_idx, checkpoint_dir=checkpoint_dir)
+        [W, H, obj] = smooth_nmf(X, sparsity=self.sparsity,
+                                    smoothness=self.smoothness,
+                                    early_stopping=self.early_stopping,
+                                    gamma1=self.gamma1,
+                                    gamma2=self.gamma2,
+                                    betaH=self.betaH,
+                                    betaW=self.betaW,
+                                    n_components=self.n_components,
+                                    max_iter=self.max_iter,
+                                    W=W,
+                                    H=H,
+                                    init=init,
+                                    checkpoint_idx=checkpoint_idx,
+                                    checkpoint_dir=checkpoint_dir,
+                                    random_state=random_state)
 
         self.W = W
         self.H = H
@@ -255,8 +250,9 @@ def _initialize(X, W, H, n_components, init=None, eps=1e-6, random_state=None):
     #return(W, H)
 
     if init == 'random':
-        W = np.random.uniform(0, 1, size=(X.shape[0], n_components))
-        H = np.random.uniform(0, 1, size=(n_components, X.shape[1]))
+        rng = check_random_state(random_state)
+        W = rng.random.uniform(0, 1, size=(X.shape[0], n_components))
+        H = rng.random.uniform(0, 1, size=(n_components, X.shape[1]))
     else:
         # NNDSVD initialization
         # code from
@@ -333,13 +329,59 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
     gamma1=1.001, gamma2=1.001, betaH=0.1, betaW=0.1, max_iter=100,
     TTp=None, TTp_norm=None, checkpoint_idx=None, checkpoint_dir=None):
 
+    """
+
+        Palm algorithm for smooth and sparse NMF
+
+        Inputs
+        ------
+
+        X:  array to be factorized in n_features x n_observations format
+
+        H:   initial setting for H (default: random)
+
+        W:   initial setting for W (default: random)
+
+        n_components: the rank of the decomposition
+
+        init: initionalization type
+
+        sparsity: sparsity regularization parameter
+
+        smoothness: smoothness regularization parameter
+
+        gamma1:   constant > 1 for the gradient descend step of W.
+
+        gamma2:   constant > 1 for the gradient descend step of W.
+
+        betaH:   constant. L-2 constraint for H.
+
+        betaW:   constant. L-2 constraint for W.
+
+        max_iter: maximum number of iterations (default: 100)
+
+        conv_eps: threshold for early stopping (default: 0,
+                                                     i.e., no early stopping)
+        random_seed: set the random seed to the given value
+                           (default: 1; if equal to 0, seed is not set)
+
+
+        Return
+        ------
+        W - final W
+        H - final
+        obj - list of the cost at each iteration
+
+    """
+
+
     if n_components is None:
         n_components = min(X.shape[0], X.shape[1])
 
     if init == 'custom':
         pass # need to add checks for None, or option to set one
     else:
-        W, H = _initialize(X, W, H, n_components, init=init, eps=1e-6, random_state=None)
+        W, H = _initialize(X, W, H, n_components, init=init, eps=1e-6, random_state=random_state)
 
     obj = []  # list storing the objective function value
 
