@@ -380,7 +380,7 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
                 chkpt_file[str(it)] = chkpt_data
                 #pickle.dump(chkpt_data, chkpt_file)
 
-    chkpt_file.close()
+            chkpt_file.close()
 
 
 
