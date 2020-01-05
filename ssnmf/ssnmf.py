@@ -251,8 +251,8 @@ def _initialize(X, W, H, n_components, init=None, eps=1e-6, random_state=None):
 
     if init == 'random':
         rng = check_random_state(random_state)
-        W = rng.random.uniform(0, 1, size=(X.shape[0], n_components))
-        H = rng.random.uniform(0, 1, size=(n_components, X.shape[1]))
+        W = rng.uniform(0, 1, size=(X.shape[0], n_components))
+        H = rng.uniform(0, 1, size=(n_components, X.shape[1]))
     else:
         # NNDSVD initialization
         # code from
@@ -327,7 +327,7 @@ def _objective_function(X, W, H, sparsity, smoothness, betaW, betaH, T=None):
 
 def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, early_stopping=0,
     gamma1=1.001, gamma2=1.001, betaH=0.1, betaW=0.1, max_iter=100,
-    TTp=None, TTp_norm=None, checkpoint_idx=None, checkpoint_dir=None):
+    TTp=None, TTp_norm=None, checkpoint_idx=None, checkpoint_dir=None, random_state=None):
 
     """
 
@@ -416,13 +416,13 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
 
         #saving the model checkpoints
         if checkpoint_idx is not None:
-            import shelve
             if it in checkpoint_idx:
                 chkpt_data = {'H':H,'W':W}
                 chkpt_file[str(it)] = chkpt_data
                 #pickle.dump(chkpt_data, chkpt_file)
 
-            chkpt_file.close()
+    if checkpoint_idx is not None:
+        chkpt_file.close()
 
 
 
