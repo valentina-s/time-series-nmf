@@ -78,12 +78,15 @@ class smoothNMF():
             init: select the type of ininitialization
                   'custom' - use the provided W and H
                   'random' - uniform distribution on [0,1]
-                  'nndsvd' - nonnegative svd
-                  'nndsvda'- nonnegative svd where zeros filled with average
-                  'nndsvdar' - nonnegative svd where zeros fillded with small random values
+                  'nndsvd' - nonnegative double svd (default)
+                  'nndsvda'- nonnegative double svd where zeros filled with average
+                  'nndsvdar' - nonnegative double svd where zeros fillded with small random values
             checkpoint_idx - list of iteration indeces for which to save the decompositions
                   the format is a dictionary where the decompositions can be accessed by the iteration index,
                   each decomposition is a dictionary with H and W keys
+                  (note that 0 in the checkpoint_idx corresponds to the initial condition,
+                   and checkpoint_idx=range(max_iter+1) will store the decomposition of all updates
+                   including the final result)
             checkpoint_dir - the dir where to store the checkpoint file,
                               by default it gets stored in the execution directory
 
@@ -344,7 +347,7 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
 
         n_components: the rank of the decomposition
 
-        init: initionalization type
+        init: initionalization type (default is nndsvd)
 
         sparsity: sparsity regularization parameter
 
@@ -401,6 +404,11 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
         if checkpoint_dir is not None:
             if os.path.isdir(checkpoint_dir):
                 chkpt_file = shelve.open(os.path.join(checkpoint_dir, 'chkpt-'+('-'.join(str(datetime.now()).split(' ')))))
+                if 0 in checkpoint_idx:
+                    # storing initial conditions
+                    chkpt_data = {'H':H,'W':W}
+                    chkpt_file[str(0)] = chkpt_data
+
             else:
                 raise ValueError('Please provide an existing directory.')
         else:
@@ -416,9 +424,9 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
 
         #saving the model checkpoints
         if checkpoint_idx is not None:
-            if it in checkpoint_idx:
+            if (it+1) in checkpoint_idx:
                 chkpt_data = {'H':H,'W':W}
-                chkpt_file[str(it)] = chkpt_data
+                chkpt_file[str(it+1)] = chkpt_data
                 #pickle.dump(chkpt_data, chkpt_file)
 
     if checkpoint_idx is not None:
