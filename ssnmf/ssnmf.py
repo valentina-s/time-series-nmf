@@ -3,6 +3,7 @@ from numpy import linalg as LA
 import numbers
 from operator import eq
 import os
+import math
 
 
 
@@ -256,6 +257,42 @@ def _initialize(X, W, H, n_components, init=None, eps=1e-6, random_state=None):
         rng = check_random_state(random_state)
         W = rng.uniform(0, 1, size=(X.shape[0], n_components))
         H = rng.uniform(0, 1, size=(n_components, X.shape[1]))
+
+    elif init == 'random_vcol':
+        """
+        Return initialized basis and mixture matrix. Initialized matrices are of
+        the same type as passed target matrix.
+
+        :param V: Target matrix, the matrix for MF method to estimate.
+        :type V: One of the :class:`scipy.sparse` sparse matrices types or or
+                :class:`numpy.matrix`
+        :param rank: Factorization rank.
+        :type rank: `int`
+        :param options: Specify the algorithm and model specific options (e.g. initialization of
+                extra matrix factor, seeding parameters).
+
+                Option ``p_c`` represents the number of columns of target matrix used
+                to average the column of basis matrix. Default value for ``p_c`` is
+                1/5 * (target.shape[1]).
+                Option ``p_r`` represent the number of rows of target matrix used to
+                average the row of basis matrix. Default value for ``p_r`` is 1/5 * (target.shape[0]).
+        :type options: `dict`
+        """
+
+        # p_c = options.get('p_c', int(ceil(1. / 5 * X.shape[1])))
+        # p_r = options.get('p_r', int(ceil(1. / 5 * X.shape[0])))
+
+        p_c = int(math.ceil(1. / 5 * X.shape[1]))
+        p_r = int(math.ceil(1. / 5 * X.shape[0]))
+        prng = np.random.RandomState()
+
+        W = np.zeros((X.shape[0], n_components))
+        H = np.zeros((n_components, X.shape[1]))
+        for i in range(n_components):
+            W[:, i] = X[:, prng.randint(
+                low=0, high=X.shape[1], size=p_c)].mean(axis=1)
+            H[i, :] = X[
+                prng.randint(low=0, high=X.shape[0], size=p_r), :].mean(axis=0)
     else:
         # NNDSVD initialization
         # code from
@@ -372,7 +409,7 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
         Return
         ------
         W - final W
-        H - final
+        H - final H
         obj - list of the cost at each iteration
 
     """
