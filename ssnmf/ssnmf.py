@@ -452,6 +452,14 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
             chkpt_file = shelve.open('chkpt-'+'-'.join(str(datetime.now()).split(' ')))
         #chkpt_file = shelve.open('chkpt')
 
+    # Parameters used for auto-stopping
+    sm_flag = False  # flag will be set to True if change of smoothness becomes positive
+    sm_record = []   # save all smoothness measure
+    sm_3rd = []      # save 3rd difference of smoothness
+    it_max_3rd = None  # index of max 3rd diff
+    h_norm = []      # normalized H curves
+    h_norm_diff_th = None
+
     for it in range(max_iter):
 
         W = _update_W(X, W, H, gamma1=gamma1, sparsity=sparsity, smoothness=smoothness, betaW=betaW)
@@ -465,6 +473,39 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
                 chkpt_data = {'H':H,'W':W}
                 chkpt_file[str(it+1)] = chkpt_data
                 #pickle.dump(chkpt_data, chkpt_file)
+
+        # Check smoothness change: turn on smoothness_flag if start to rise
+        if np.mod(it, 10) == 0:  # check every 10 steps
+            if it == 0:
+                sm_record.append(1e5)   # force first change to be negative
+            else:
+                sm_record.append(LA.norm(H @ T, 'fro')**2)  # smoothness of updated H in current iteration
+                if sm_record[-1] > sm_record[-2]:
+                    sm_flag = True  # set to True if change of smoothness becomes positive
+
+            # Get 3rd difference of smoothness
+            if len(sm_record) <= 3:
+                sm_3rd.append(np.nan)  # doesn't exist
+            else:
+                sm_3rd.append(np.diff(sm_record[-4:], n=3))
+
+            # Normalize H curves
+            h_norm.append(H.T/LA.norm(H, axis=1))
+
+            # Find max of 3rd difference
+            if sm_flag and sm_3rd[-1] > 0:
+                if np.diff(np.array(sm_3rd[-2:]).squeeze()) < 0:
+                    if it_max_3rd is None:  # only set this once
+                        it_max_3rd = it   # max point of 3rd difference of smoothness
+                        print('Max of 3rd diff at iteration #%d' % (it))
+                        h_norm_diff_th = (np.diff(np.array(h_norm[-3:-1]), axis=0)**2).sum()  # last diff
+
+                # check if should stop if already found max point
+                if h_norm_diff_th is not None:
+                    h_norm_diff_curr = (np.diff(np.array(h_norm[-2:]), axis=0)**2).squeeze().sum()  # curr diff
+                    if h_norm_diff_curr < h_norm_diff_th*0.1:
+                        print('Stopping at iteration %d' % it)
+                        break
 
     if checkpoint_idx is not None:
         chkpt_file.close()
