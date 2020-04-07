@@ -66,7 +66,8 @@ class smoothNMF():
         self.n_components = n_components
 
 
-    def fit(self, X, W=None, H=None, init=None, checkpoint_idx=None, checkpoint_dir=None, random_state=None):
+    def fit(self, X, W=None, H=None, init=None,
+            checkpoint_idx=None, checkpoint_dir=None, checkpoint_file=None, random_state=None):
         """
             Perform the decomposition with the PALM method.
 
@@ -90,6 +91,8 @@ class smoothNMF():
                    including the final result)
             checkpoint_dir - the dir where to store the checkpoint file,
                               by default it gets stored in the execution directory
+            checkpoint_file - filename of the checkpoint file,
+                              by default it is 'chkpt-DATE-TIMESTAMP.db'
 
         """
 
@@ -107,6 +110,7 @@ class smoothNMF():
                                     init=init,
                                     checkpoint_idx=checkpoint_idx,
                                     checkpoint_dir=checkpoint_dir,
+                                    checkpoint_file=checkpoint_file,
                                     random_state=random_state)
 
         self.W = W
@@ -367,7 +371,7 @@ def _objective_function(X, W, H, sparsity, smoothness, betaW, betaH, T=None):
 
 def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, early_stopping=0,
     gamma1=1.001, gamma2=1.001, betaH=0.1, betaW=0.1, max_iter=100,
-    TTp=None, TTp_norm=None, checkpoint_idx=None, checkpoint_dir=None, random_state=None):
+    TTp=None, TTp_norm=None, checkpoint_idx=None, checkpoint_dir=None, checkpoint_file=None, random_state=None):
 
     """
 
@@ -405,6 +409,12 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
         random_seed: set the random seed to the given value
                            (default: 1; if equal to 0, seed is not set)
 
+        checkpoint_idx:   iteration to save
+
+        checkpoint_dir:   directory to save checkpoint files
+
+        checkpoint_file:   filename for saving checkpoints
+
 
         Return
         ------
@@ -440,12 +450,15 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
         import shelve
         if checkpoint_dir is not None:
             if os.path.isdir(checkpoint_dir):
-                chkpt_file = shelve.open(os.path.join(checkpoint_dir, 'chkpt-'+('-'.join(str(datetime.now()).split(' ')))))
+                if checkpoint_file is not None:
+                    chkpt_file = shelve.open(os.path.join(checkpoint_dir, checkpoint_file))
+                else:
+                    chkpt_file = shelve.open(os.path.join(checkpoint_dir,
+                                                          'chkpt-'+('-'.join(str(datetime.now()).split(' ')))))
                 if 0 in checkpoint_idx:
                     # storing initial conditions
                     chkpt_data = {'H':H,'W':W}
                     chkpt_file[str(0)] = chkpt_data
-
             else:
                 raise ValueError('Please provide an existing directory.')
         else:
