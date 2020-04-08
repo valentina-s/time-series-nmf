@@ -434,10 +434,10 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
                 dictionary for early stopping criteria and params
                 using the objective - {'type': 'cost',
                                        'threshold': 0.005,
-                                       'len_mean': 5}
+                                       'length_for_mean': 5}
                 using norm of H curves - {'type': 'h_norm',
-                                          'threshold': 0.1,
-                                          'len_mean': 5}
+                                          'threshold': 0.01,
+                                          'length_for_mean': 5}
                 default: None, i.e., no early stopping
 
         random_seed: set the random seed to the given value
@@ -474,9 +474,17 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
         if early_stopping['type'] == 'cost':
             obj_diff = [1e10]     # list storing difference of the objective
             obj_diff_mean = 1e12  # initialize with a large value to avoid stop at the beginning
+            if 'threshold' not in early_stopping:
+                early_stopping['threshold'] = 0.001
+            if 'length_for_mean' not in early_stopping:
+                early_stopping['length_for_mean'] = 5
         elif early_stopping['type'] == 'h_norm':
             h_norm_diff_sum = [1e10]    # list storing sum of differences of normalized h curves
             h_norm_last = 10      # last set of normalized H curves, initialize as a large constant
+            if 'threshold' not in early_stopping:
+                early_stopping['threshold'] = 0.01
+            if 'length_for_mean' not in early_stopping:
+                early_stopping['length_for_mean'] = 5
         else:
             ValueError('Cannot find match of early stopping criteria.')
 
@@ -532,7 +540,7 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
             if early_stopping['type'] == 'cost':
                 if it > 0:
                     obj_diff.append(np.abs(obj[-1] - obj[-2]))
-                    obj_diff_mean = np.mean(obj_diff[-1-early_stopping['len_mean']:-1])  # average of last mean diff
+                    obj_diff_mean = np.mean(obj_diff[-1-early_stopping['length_for_mean']:-1])  # average of last mean diff
 
                 if obj_diff[-1] > (1-early_stopping['threshold'])*obj_diff_mean:
                     print('Stopping at iteration %d' % it)
@@ -541,7 +549,7 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
                 h_norm_curr = (H.T / LA.norm(H, axis=1)).T  # normalize all H curves
                 h_norm_diff_sum.append(((h_norm_curr - h_norm_last)**2).sum())
 
-                h_norm_diff_sum_mean = np.mean(h_norm_diff_sum[-1-early_stopping['len_mean']:-1])  # average of last mean diff
+                h_norm_diff_sum_mean = np.mean(h_norm_diff_sum[-1-early_stopping['length_for_mean']:-1])  # average of last mean diff
                 if h_norm_diff_sum[-1] > (1-early_stopping['threshold'])*h_norm_diff_sum_mean:
                     print('Stopping at iteration %d' % it)
                     break
