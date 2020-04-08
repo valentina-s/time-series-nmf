@@ -451,10 +451,14 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
         if checkpoint_dir is not None:
             if os.path.isdir(checkpoint_dir):
                 if checkpoint_file is not None:
-                    chkpt_file = shelve.open(os.path.join(checkpoint_dir, checkpoint_file))
+                    fpath = os.path.join(checkpoint_dir, checkpoint_file)
                 else:
-                    chkpt_file = shelve.open(os.path.join(checkpoint_dir,
-                                                          'chkpt-'+('-'.join(str(datetime.now()).split(' ')))))
+                    fpath = os.path.join(checkpoint_dir, 'chkpt-'+('-'.join(str(datetime.now()).split(' '))))
+
+                if os.path.exists(fpath+'.db'):
+                    os.remove(fpath+'.db')
+                chkpt_file = shelve.open(fpath)
+
                 if 0 in checkpoint_idx:
                     # storing initial conditions
                     chkpt_data = {'H':H,'W':W}
