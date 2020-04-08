@@ -48,7 +48,7 @@ class smoothNMF():
 
 # this is the case with no sparsity and smoothness
 
-    def __init__(self, sparsity=0, smoothness=0, early_stopping=0,
+    def __init__(self, sparsity=0, smoothness=0, early_stopping=None,
     gamma1=1.001, gamma2=1.001, betaH=0, betaW=0, n_components=None, max_iter=200):
 
         self.max_iter = max_iter
@@ -369,33 +369,33 @@ def _objective_function(X, W, H, sparsity, smoothness, betaW, betaH, T=None):
     return(objective)
 
 
-def _check_smoothness_condition(H, T, it, sm):
-    """Return smoothness-related parameters for determining early stopping.
+# def _check_smoothness_condition(H, T, it, sm):
+#     """Return smoothness-related parameters for determining early stopping.
+#
+#     Parameters
+#     ----------
+#     it:   current iteration
+#
+#     sm:   dict contatining smoothness-related info
+#           sm['record'] -- smoothness of all recorded steps
+#           sm['3rd'] -- 3rd difference of smoothness curve of all recorded steps
+#           sm['flag'] -- True if smoothness starts to increase
+#     """
+#     if it == 0:
+#         sm['record'].append(1e5)  # force first change to be negative
+#     else:
+#         sm['record'].append(LA.norm(H @ T, 'fro') ** 2)  # smoothness of updated H in current iteration
+#         if sm['record'][-1] > sm['record'][-2]:
+#             sm['flag'] = True  # set to True if change of smoothness becomes positive
+#
+#     # Get 3rd difference of smoothness
+#     if len(sm['record']) <= 3:
+#         sm['3rd'].append(np.nan)  # doesn't exist
+#     else:
+#         sm['3rd'].append(np.diff(sm['record'][-4:], n=3))
 
-    Parameters
-    ----------
-    it:   current iteration
 
-    sm:   dict contatining smoothness-related info
-          sm['record'] -- smoothness of all recorded steps
-          sm['3rd'] -- 3rd difference of smoothness curve of all recorded steps
-          sm['flag'] -- True if smoothness starts to increase
-    """
-    if it == 0:
-        sm['record'].append(1e5)  # force first change to be negative
-    else:
-        sm['record'].append(LA.norm(H @ T, 'fro') ** 2)  # smoothness of updated H in current iteration
-        if sm['record'][-1] > sm['record'][-2]:
-            sm['flag'] = True  # set to True if change of smoothness becomes positive
-
-    # Get 3rd difference of smoothness
-    if len(sm['record']) <= 3:
-        sm['3rd'].append(np.nan)  # doesn't exist
-    else:
-        sm['3rd'].append(np.diff(sm['record'][-4:], n=3))
-
-
-def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, early_stopping=0,
+def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, early_stopping=None,
     gamma1=1.001, gamma2=1.001, betaH=0.1, betaW=0.1, max_iter=100,
     TTp=None, TTp_norm=None, checkpoint_idx=None, checkpoint_dir=None, checkpoint_file=None, random_state=None):
 
@@ -430,8 +430,15 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
 
         max_iter: maximum number of iterations (default: 100)
 
-        early_stopping: threshold for early stopping (default: 0,
-                                                     i.e., no early stopping)
+        early_stopping: dict
+                dictionary for early stopping criteria and params
+                using the objective - {'type': 'cost',
+                                       'threshold': 0.005,
+                                       'len_mean': 5}
+                using norm of H curves - {'type': 'h_norm',
+                                          'threshold': 0.1,
+                                          'len_mean': 5}
+                default: None, i.e., no early stopping
 
         random_seed: set the random seed to the given value
                            (default: 1; if equal to 0, seed is not set)
@@ -460,7 +467,9 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
     else:
         W, H = _initialize(X, W, H, n_components, init=init, eps=1e-6, random_state=random_state)
 
-    obj = []  # list storing the objective function value
+    obj = []              # list storing the objective function value
+    obj_diff = [1e10]     # list storing difference of the objective
+    obj_diff_mean = 1e12  # initialize with large value to avoid stop at the beginning
 
     if smoothness > 0:
         # Tikhonov regularization matrix
@@ -496,14 +505,6 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
             chkpt_file = shelve.open('chkpt-'+'-'.join(str(datetime.now()).split(' ')))
         #chkpt_file = shelve.open('chkpt')
 
-    # Parameters used for auto-stopping
-    sm = dict({'flag': False,  # will be set to True if change of smoothness becomes positive
-               'record': [],   # save all smoothness measure
-               '3rd': []})     # save 3rd difference of smoothness
-    h_norm = []             # normalized H curves
-    it_max_3rd = None       # index of max 3rd diff
-    h_norm_diff_th = None   # threshold based on max 3rd diff point
-
     for it in range(max_iter):
 
         W = _update_W(X, W, H, gamma1=gamma1, sparsity=sparsity, smoothness=smoothness, betaW=betaW)
@@ -518,27 +519,19 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
                 chkpt_file[str(it+1)] = chkpt_data
                 #pickle.dump(chkpt_data, chkpt_file)
 
-        # Check smoothness change: turn on smoothness_flag if start to rise
-        if np.mod(it, 10) == 0:  # check every 10 steps
+        if early_stopping is not None:
+            if early_stopping['type'] == 'cost':
+                if it > 0:
+                    obj_diff.append(np.abs(obj[-1] - obj[-2]))
+                    obj_diff_mean = np.nanmean(obj_diff[-1-early_stopping['len_mean']:-1])  # average of last mean cost diff
 
-            _check_smoothness_condition(H, T, it, sm)  # append new smoothness record and set flag
-            h_norm.append(H.T/LA.norm(H, axis=1))  # normalize H curves
-
-            if sm['flag'] and sm['3rd'][-1] > 0:
-
-                # find max of 3rd difference
-                if np.diff(np.array(sm['3rd'][-2:]).squeeze()) < 0:
-                    if it_max_3rd is None:  # only set this once
-                        it_max_3rd = it   # max point of 3rd difference of smoothness
-                        print('Max of 3rd diff at iteration #%d' % it)
-                        h_norm_diff_th = (np.diff(np.array(h_norm[-3:-1]), axis=0)**2).sum()  # last diff
-
-                # check if should stop if already found max point
-                if h_norm_diff_th is not None:
-                    h_norm_diff_curr = (np.diff(np.array(h_norm[-2:]), axis=0)**2).squeeze().sum()  # curr diff
-                    if h_norm_diff_curr < h_norm_diff_th * early_stopping:
-                        print('Stopping at iteration %d' % it)
-                        break
+                if obj_diff[-1] > (1-early_stopping['threshold'])*obj_diff_mean:
+                    print('Stopping at iteration %d' % it)
+                    break
+            elif early_stopping['type'] == 'h_norm':
+                print('use H_norm')
+            else:
+                ValueError('Cannot find match of early stopping criteria.')
 
     if checkpoint_idx is not None:
         chkpt_file.close()
