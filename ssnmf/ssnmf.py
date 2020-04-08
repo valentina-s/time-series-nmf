@@ -467,9 +467,18 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
     else:
         W, H = _initialize(X, W, H, n_components, init=init, eps=1e-6, random_state=random_state)
 
-    obj = []              # list storing the objective function value
-    obj_diff = [1e10]     # list storing difference of the objective
-    obj_diff_mean = 1e12  # initialize with large value to avoid stop at the beginning
+    obj = []   # list storing the objective function value
+
+    # initialization for early stopping
+    if early_stopping is not None:
+        if early_stopping['type'] == 'cost':
+            obj_diff = [1e10]     # list storing difference of the objective
+            obj_diff_mean = 1e12  # initialize with a large value to avoid stop at the beginning
+        elif early_stopping['type'] == 'h_norm':
+            h_norm_diff_sum = [1e10]    # list storing sum of differences of normalized h curves
+            h_norm_last = 10      # last set of normalized H curves, initialize as a large constant
+        else:
+            ValueError('Cannot find match of early stopping criteria.')
 
     if smoothness > 0:
         # Tikhonov regularization matrix
@@ -523,13 +532,21 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
             if early_stopping['type'] == 'cost':
                 if it > 0:
                     obj_diff.append(np.abs(obj[-1] - obj[-2]))
-                    obj_diff_mean = np.nanmean(obj_diff[-1-early_stopping['len_mean']:-1])  # average of last mean cost diff
+                    obj_diff_mean = np.mean(obj_diff[-1-early_stopping['len_mean']:-1])  # average of last mean diff
 
                 if obj_diff[-1] > (1-early_stopping['threshold'])*obj_diff_mean:
                     print('Stopping at iteration %d' % it)
                     break
             elif early_stopping['type'] == 'h_norm':
-                print('use H_norm')
+                h_norm_curr = (H.T / LA.norm(H, axis=1)).T  # normalize all H curves
+                h_norm_diff_sum.append(((h_norm_curr - h_norm_last)**2).sum())
+
+                h_norm_diff_sum_mean = np.mean(h_norm_diff_sum[-1-early_stopping['len_mean']:-1])  # average of last mean diff
+                if h_norm_diff_sum[-1] > (1-early_stopping['threshold'])*h_norm_diff_sum_mean:
+                    print('Stopping at iteration %d' % it)
+                    break
+
+                h_norm_last = h_norm_curr   # update h_norm_last for next diff calculation
             else:
                 ValueError('Cannot find match of early stopping criteria.')
 
