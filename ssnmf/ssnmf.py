@@ -369,6 +369,93 @@ def _objective_function(X, W, H, sparsity, smoothness, betaW, betaH, T=None):
     return(objective)
 
 
+def _get_early_stopping_params(early_stopping):
+    """Set default parameters if not already set in input.
+    """
+    if early_stopping is not None:
+        if early_stopping['type'] == 'cost':
+            if 'threshold' not in early_stopping:
+                early_stopping['threshold'] = 0.005
+            if 'length_mean' not in early_stopping:
+                early_stopping['length_mean'] = 5
+            if 'length_ratio_plateau' not in early_stopping:
+                early_stopping['length_ratio_plateau'] = 2
+        elif early_stopping['type'] == 'h_norm':
+            if 'threshold' not in early_stopping:
+                early_stopping['threshold'] = 0.01
+            if 'length_mean' not in early_stopping:
+                early_stopping['length_mean'] = 5
+            if 'length_ratio_plateau' not in early_stopping:
+                early_stopping['length_ratio_plateau'] = 1
+        else:
+            raise ValueError('Cannot find match of early stopping method.')
+
+        if 'min_iter' not in early_stopping:
+            early_stopping['min_iter'] = 250
+
+    return early_stopping
+
+
+def _early_stopping_cost(it, obj, obj_diff, early_stopping):
+    """Determine if to stop early based on change of cost.
+    """
+    # shorthand for stopping params
+    th = early_stopping['threshold']
+    avg_len = early_stopping['length_mean']
+    it_stop_th = early_stopping['min_iter']
+    plat_len = early_stopping['length_ratio_plateau']
+
+    # get values from current iteration
+    if it > 0:
+        obj_diff.append(np.abs(obj[-1] - obj[-2]))  # absolute value of the diff of obj
+        obj_diff_mean = np.mean(obj_diff[-1 - avg_len:-1])  # average of last mean diff
+    elif it == 0:
+        obj_diff_mean = 1e12  # initialize with a large value to avoid stop at the beginning
+    if it > avg_len * plat_len * 2:
+        obj_diff_plateau = np.diff(obj_diff[it - avg_len * plat_len * 2:it])
+    else:
+        obj_diff_plateau = 1
+
+    # determine if to stop
+    if obj_diff[-1] > (1 - th) * obj_diff_mean and np.all(obj_diff_plateau < 0) and it > it_stop_th:
+        break_flag = True
+    else:
+        break_flag = False
+
+    return break_flag
+
+
+def _early_stopping_hnorm(it, H, h_norm_diff_sum, h_norm_last, early_stopping):
+    """Determine if to stop early based on change of normalized H curves.
+    """
+    # shorthand for stopping params
+    th = early_stopping['threshold']
+    avg_len = early_stopping['length_mean']
+    it_stop_th = early_stopping['min_iter']
+    plat_len = early_stopping['length_ratio_plateau']
+
+    # get values from current iteration
+    h_norm_curr = (H.T / LA.norm(H, axis=1)).T  # normalize all H curves
+    h_norm_diff_sum.append(((h_norm_curr - h_norm_last) ** 2).sum())
+    if it > avg_len * plat_len * 2:
+        h_norm_diff_sum_plateau = np.diff(h_norm_diff_sum[it - avg_len * plat_len * 2:it])
+    else:
+        h_norm_diff_sum_plateau = 1
+    h_norm_diff_sum_mean = np.mean(h_norm_diff_sum[-1 - avg_len:-1])  # average of last mean diff
+
+    # determine if to stop
+    if h_norm_diff_sum[-1] > (1 - th) * h_norm_diff_sum_mean and \
+            np.all(h_norm_diff_sum_plateau < 0) and it > it_stop_th:
+        break_flag = True
+    else:
+        break_flag = False
+
+    h_norm_last = h_norm_curr  # update h_norm_last for next diff calculation
+
+    return break_flag, h_norm_last
+
+
+
 def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, early_stopping=None,
     gamma1=1.001, gamma2=1.001, betaH=0.1, betaW=0.1, max_iter=100,
     TTp=None, TTp_norm=None, checkpoint_idx=None, checkpoint_dir=None, checkpoint_file=None, random_state=None):
@@ -448,36 +535,15 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
     obj = []   # list storing the objective function value
 
     # initialization for early stopping
+    early_stopping = _get_early_stopping_params(early_stopping)
     if early_stopping is not None:
         if early_stopping['type'] == 'cost':
             obj_diff = [1e10]     # list storing difference of the objective
-            obj_diff_mean = 1e12  # initialize with a large value to avoid stop at the beginning
-            if 'threshold' not in early_stopping:
-                early_stopping['threshold'] = 0.005
-            if 'length_mean' not in early_stopping:
-                early_stopping['length_mean'] = 5
-            if 'length_ratio_plateau' not in early_stopping:
-                early_stopping['length_ratio_plateau'] = 2
         elif early_stopping['type'] == 'h_norm':
             h_norm_diff_sum = [1e10]    # list storing sum of differences of normalized h curves
             h_norm_last = 10      # last set of normalized H curves, initialize as a large constant
-            if 'threshold' not in early_stopping:
-                early_stopping['threshold'] = 0.01
-            if 'length_mean' not in early_stopping:
-                early_stopping['length_mean'] = 5
-            if 'length_ratio_plateau' not in early_stopping:
-                early_stopping['length_ratio_plateau'] = 1
         else:
-            raise ValueError('Cannot find match of early stopping criteria.')
-
-        if 'min_iter' not in early_stopping:
-            early_stopping['min_iter'] = 250
-
-        # shorthand for stopping params
-        th = early_stopping['threshold']
-        avg_len = early_stopping['length_mean']
-        it_stop_th = early_stopping['min_iter']
-        plat_len = early_stopping['length_ratio_plateau']
+            raise ValueError('Cannot find match of early stopping method.')
 
     if smoothness > 0:
         # Tikhonov regularization matrix
@@ -529,34 +595,15 @@ def smooth_nmf(X, W, H, n_components=None, init=None, sparsity=0, smoothness=0, 
 
         if early_stopping is not None:
             if early_stopping['type'] == 'cost':
-                if it > 0:
-                    obj_diff.append(np.abs(obj[-1] - obj[-2]))  # absolute value of the diff of obj
-                    obj_diff_mean = np.mean(obj_diff[-1-avg_len:-1])  # average of last mean diff
-                if it > avg_len*plat_len*2:
-                    obj_diff_plateau = np.diff(obj_diff[it-avg_len*plat_len*2:it])
-                else:
-                    obj_diff_plateau = 1
-
-                if obj_diff[-1] > (1-th)*obj_diff_mean and np.all(obj_diff_plateau < 0) and it > it_stop_th:
-                    print('Stopping at iteration %d' % it)
-                    break
+                bk = _early_stopping_cost(it, obj, obj_diff, early_stopping)
             elif early_stopping['type'] == 'h_norm':
-                h_norm_curr = (H.T / LA.norm(H, axis=1)).T  # normalize all H curves
-                h_norm_diff_sum.append(((h_norm_curr - h_norm_last)**2).sum())
-                if it > avg_len*plat_len*2:
-                    h_norm_diff_sum_plateau = np.diff(h_norm_diff_sum[it-avg_len*plat_len*2:it])
-                else:
-                    h_norm_diff_sum_plateau = 1
-
-                h_norm_diff_sum_mean = np.mean(h_norm_diff_sum[-1-avg_len:-1])  # average of last mean diff
-                if h_norm_diff_sum[-1] > (1-th)*h_norm_diff_sum_mean and \
-                        np.all(h_norm_diff_sum_plateau < 0) and it > it_stop_th:
-                    print('Stopping at iteration %d' % it)
-                    break
-
-                h_norm_last = h_norm_curr   # update h_norm_last for next diff calculation
+                bk, h_norm_last = _early_stopping_hnorm(it, H, h_norm_diff_sum, h_norm_last, early_stopping)
             else:
-                raise ValueError('Cannot find match of early stopping criteria.')
+                raise ValueError('Cannot find match of early stopping method.')
+
+            if bk is True:
+                print('Stopping at iteration %d' % it)
+                break
 
         if it == max_iter-1:
             print('Stopping at iteration set in max_iter.')
