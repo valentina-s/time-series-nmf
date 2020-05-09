@@ -14,7 +14,7 @@ with open('requirements.txt') as f:
 
 REQUIRES = [t.strip() for t in requirements]
 
-opts = dict(name='ss-nmf',
+opts = dict(name='ssnmf',
             maintainer='Valentina Staneva',
             maintainer_email='vms16@uw.edu',
             description='Smooth and Sparse NMF',
