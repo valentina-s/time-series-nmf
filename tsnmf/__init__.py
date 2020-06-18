@@ -1,1 +1,1 @@
-from .ssnmf import *
+from .tsnmf import *
