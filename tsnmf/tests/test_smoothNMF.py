@@ -9,7 +9,7 @@ import os
 import sys
 sys.path.append('..')
 import os.path as op
-data_path = op.join(ssnmf.__path__[0],'data')
+data_path = op.join(tsnmf.__path__[0],'data')
 
 def test_all_zero_one_iteration():
     # testing no sparsity, no smoothnes, 1 iteration
