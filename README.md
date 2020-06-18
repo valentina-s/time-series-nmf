@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/valentina-s/ss-nmf.svg?branch=master)](https://travis-ci.org/valentina-s/ss-nmf)
+[![Build Status](https://travis-ci.org/valentina-s/time-series-nmf.svg?branch=master)](https://travis-ci.org/valentina-s/time-series-nmf)
 
 ## time-series-nmf  
 
