@@ -8,7 +8,7 @@ This work is under continuous development.
 
 ### Installation:
 
-```
+```bash
 git clone https://github.com/valentina-s/time-series-nmf
 
 cd time-series-nmf
@@ -18,8 +18,6 @@ python setup.py install
 
 ### Getting started:
 ```python
-    
-    
 import tsnmf
     
 # generate some data
