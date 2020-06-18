@@ -4,7 +4,7 @@ from os.path import join as pjoin
 PACKAGES = find_packages()
 
 # Get version and release info, which is all stored in shablona/version.py
-ver_file = os.path.join('ssnmf', 'version.py')
+ver_file = os.path.join('tsnmf', 'version.py')
 with open(ver_file) as f:
     exec(f.read())
 
@@ -14,12 +14,12 @@ with open('requirements.txt') as f:
 
 REQUIRES = [t.strip() for t in requirements]
 
-opts = dict(name='ssnmf',
+opts = dict(name='tsnmf',
             maintainer='Valentina Staneva',
             maintainer_email='vms16@uw.edu',
-            description='Smooth and Sparse NMF',
+            description='Time Series NMF',
             long_description='Palm implementation of sparse NMF with Tichonov regularization of the time difference of the coefficients',
-            url='https://github.com/valentina-s/ss-nmf',
+            url='https://github.com/valentina-s/time-series-nmf',
             download_url='DOWNLOAD_URL',
             license='MIT License',
             classifiers='CLASSIFIERS',
