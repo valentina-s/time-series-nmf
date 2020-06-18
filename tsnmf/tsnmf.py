@@ -341,7 +341,7 @@ def _initialize(X, W, H, n_components, init=None, eps=1e-6, random_state=None):
         W[W < eps] = 0
         H[H < eps] = 0
 
-        if init == "nndsvd":
+        if init == "nndsvd" or init is None:
             pass
         elif init == "nndsvda":
             avg = X.mean()
