@@ -17,21 +17,22 @@ python setup.py install
 ```
 
 ### Getting started:
-```
+```python
     
-    import tsnmf
     
-    # generate some data
-    from numpy.random import rand
-    data = rand(100,1000)
+import tsnmf
     
-    # fit time series nmf to data
-    model = tsnmf.smoothNMF(n_components=5)
-    model.fit()
+# generate some data
+from numpy.random import rand
+data = rand(100,1000)
     
-    # outputs
-    model.W
-    model.H
+# fit time series nmf to data
+model = tsnmf.smoothNMF(n_components=5)
+model.fit()
+    
+# outputs
+model.W
+model.H
 
 ```
 
