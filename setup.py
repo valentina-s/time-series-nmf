@@ -26,9 +26,9 @@ opts = dict(name='tsnmf',
             author='AUTHOR',
             author_email='AUTHOR_EMAIL',
             platforms='PLATFORMS',
-            version='VERSION',
+            version='0.0.1.dev0',
             packages=find_packages(),
-            package_data={'ssnmf':[pjoin('data','*')]},
+            package_data={'tsnmf':[pjoin('data','*')]},
             install_requires=REQUIRES,
             requires=REQUIRES)
 
