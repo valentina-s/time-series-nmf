@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/valentina-s/time-series-nmf.svg?branch=master)](https://travis-ci.org/valentina-s/time-series-nmf)
 [![DOI](https://zenodo.org/badge/163354959.svg)](https://zenodo.org/badge/latestdoi/163354959)
-reStructedText
+
 
 ## time-series-nmf  
 
