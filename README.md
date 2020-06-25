@@ -37,6 +37,6 @@ model.H
 ```
 
 ### Acknowledgements
-This work has been supported by NSF award #1849930 and the Betty and Gordon Moore and Alfred P. Sloan Foundations Data Science Environments grant (MSDSE).
+This work has been supported by NSF award #1849930 and the Gordon and Betty Moore and Alfred P. Sloan Foundations Data Science Environments grant (MSDSE).
 
 
