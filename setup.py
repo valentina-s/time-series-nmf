@@ -1,10 +1,9 @@
-import os
+from os import path
 from setuptools import setup, find_packages
-from os.path import join as pjoin
 PACKAGES = find_packages()
 
 # Get version and release info, which is all stored in shablona/version.py
-ver_file = os.path.join('tsnmf', 'version.py')
+ver_file = path.join('tsnmf', 'version.py')
 with open(ver_file) as f:
     exec(f.read())
 
@@ -12,25 +11,27 @@ with open(ver_file) as f:
 with open('requirements.txt') as f:
     requirements = f.readlines()
 
+# Readme for description
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
+
 REQUIRES = [t.strip() for t in requirements]
 
-opts = dict(name='tsnmf',
+opts = dict(name='time-series-nmf',
             maintainer='Valentina Staneva',
             maintainer_email='vms16@uw.edu',
             description='Time Series NMF',
-            long_description='Palm implementation of sparse NMF with Tichonov regularization of the time difference of the coefficients',
+            long_description=long_description,
+            long_description_content_type='text/markdown',
             url='https://github.com/valentina-s/time-series-nmf',
-            download_url='DOWNLOAD_URL',
             license='MIT License',
-            classifiers='CLASSIFIERS',
-            author='AUTHOR',
-            author_email='AUTHOR_EMAIL',
-            platforms='PLATFORMS',
+            author='Valentina Staneva',
+            author_email='vms16@uw.edu',
             version='0.1.0.dev0',
             packages=find_packages(),
-            package_data={'tsnmf':[pjoin('data','*')]},
-            install_requires=REQUIRES,
-            requires=REQUIRES)
+            package_data={'tsnmf':[path.join('data','*')]},
+            install_requires=REQUIRES)
 
 
 if __name__ == '__main__':

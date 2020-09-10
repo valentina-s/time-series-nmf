@@ -9,11 +9,11 @@ This work is under continuous development.
 ### Installation:
 
 ```bash
-git clone https://github.com/valentina-s/time-series-nmf
+# from github (latest)
+pip install git+https://github.com/valentina-s/time-series-nmf
 
-cd time-series-nmf
-
-python setup.py install
+# from pipy (stable)
+pip install time-series-nmf 
 ```
 
 ### Getting started:
@@ -26,7 +26,7 @@ data = rand(100,1000)
     
 # fit time series nmf to data
 model = tsnmf.smoothNMF(n_components=5)
-model.fit()
+model.fit(data)
     
 # outputs
 model.W
