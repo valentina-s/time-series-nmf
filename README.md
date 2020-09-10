@@ -14,7 +14,7 @@ This work is under continuous development.
 # from github (latest)
 pip install git+https://github.com/valentina-s/time-series-nmf
 
-# from pipy (stable)
+# from pypi (stable)
 pip install time-series-nmf 
 ```
 
